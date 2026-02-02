@@ -343,3 +343,8 @@ Votre script doit contenir au minimum :
 **Difficulté** : ⭐⭐☆☆☆
 
 🚀 **Bon courage !** N'oubliez pas : commitez et poussez régulièrement, c'est la clé ! Votre historique Git doit raconter l'histoire de votre développement.
+
+
+
+## Auteur
+Rosa PAulo
