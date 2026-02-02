@@ -1,46 +1,64 @@
-# Titre coloré et message d'accueil (sans accents)
-Write-Host "================================" -ForegroundColor Cyan
-Write-Host "   JEU DU PLUS OU MOINS" -ForegroundColor Cyan
-Write-Host "================================" -ForegroundColor Cyan
-Write-Host "Regles : Devinez le nombre entre 1 et 100 choisi par l'ordinateur." -ForegroundColor Yellow
+$historiqueScores = @()
+$rejouer = "o"
 
-# Initialisation
-$nombreADeviner = Get-Random -Minimum 1 -Maximum 101
-$nombreTentatives = 0
-$trouve = $false
+while ($rejouer -eq "o") {
+    Clear-Host
+    Write-Host "================================" -ForegroundColor Cyan
+    Write-Host "   JEU DU PLUS OU MOINS v2.0" -ForegroundColor Cyan
+    Write-Host "================================" -ForegroundColor Cyan
+    Write-Host "Regles : Devinez le nombre entre 1 et 100." -ForegroundColor Yellow
+    Write-Host "Attention : Vous avez 10 tentatives maximum !" -ForegroundColor Red
 
-while (-not $trouve) {
-    # 4.1 - Demander une saisie
-    $saisie = Read-Host "Votre proposition"
-    
-    # 4.1 - Verifier que l'utilisateur entre bien un nombre (pas de lettres ou vide)
-    if ($saisie -as [int] -eq $null) {
-        Write-Host "Erreur : Veuillez entrer un nombre valide." -ForegroundColor Red
-        continue # Reprend la boucle sans compter la tentative
+    $nombreADeviner = Get-Random -Minimum 1 -Maximum 101
+    $nombreTentatives = 0
+    $limiteMax = 10
+    $trouve = $false
+
+    while (-not $trouve -and $nombreTentatives -lt $limiteMax) {
+        $tentativesRestantes = $limiteMax - $nombreTentatives
+        Write-Host "`nTentatives restantes : $tentativesRestantes" -ForegroundColor Yellow
+        
+        $saisie = Read-Host "Votre proposition"
+        
+        # Validation des entrees (Etape 4)
+        if ($saisie -as [int] -eq $null) {
+            Write-Host "Erreur : Veuillez entrer un nombre valide." -ForegroundColor Red
+            continue
+        }
+
+        $essai = [int]$saisie
+        if ($essai -lt 1 -or $essai -gt 100) {
+            Write-Host "Erreur : Entre 1 et 100 svp." -ForegroundColor Red
+            continue
+        }
+
+        $nombreTentatives++
+
+        if ($essai -eq $nombreADeviner) {
+            Write-Host "Bravo ! Vous avez trouve en $nombreTentatives essais !" -ForegroundColor Cyan
+            $historiqueScores += $nombreTentatives
+            $trouve = $true
+        }
+        elseif ($essai -lt $nombreADeviner) {
+            Write-Host "C'est Plus grand !" -ForegroundColor Blue
+        }
+        else {
+            Write-Host "C'est Plus petit !" -ForegroundColor Green
+        }
     }
 
-    $essai = [int]$saisie
-
-    # 4.1 - Verifier que le nombre est entre 1 et 100
-    if ($essai -lt 1 -or $essai -gt 100) {
-        Write-Host "Erreur : Le nombre doit etre compris entre 1 et 100." -ForegroundColor Red
-        continue # Reprend la boucle sans compter la tentative
+    if (-not $trouve) {
+        Write-Host "`nDommage ! Vous avez depasse les 10 essais." -ForegroundColor Red
+        Write-Host "Le nombre etait : $nombreADeviner" -ForegroundColor Yellow
     }
 
-    # Si on arrive ici, la saisie est valide
-    $nombreTentatives++
-    Write-Host "Tentative $nombreTentatives" -ForegroundColor Yellow
+    # Affichage du meilleur score (Etape 5.1)
+    if ($historiqueScores.Count -gt 0) {
+        $meilleurScore = ($historiqueScores | Measure-Object -Minimum).Minimum
+        Write-Host "`nVotre meilleur score actuel : $meilleurScore" -ForegroundColor Magenta
+    }
 
-    # Comparaisons avec couleurs specifiques
-    if ($essai -eq $nombreADeviner) {
-        Write-Host "Felicitations ! Vous avez trouve le nombre $nombreADeviner !" -ForegroundColor Cyan
-        Write-Host "Nombre total de tentatives : $nombreTentatives" -ForegroundColor Cyan
-        $trouve = $true
-    }
-    elseif ($essai -lt $nombreADeviner) {
-        Write-Host "C'est Plus grand !" -ForegroundColor Blue # Bleu pour Plus Grand
-    }
-    else {
-        Write-Host "C'est Plus petit !" -ForegroundColor Green # Vert pour Plus Petit
-    }
+    $rejouer = Read-Host "`nVoulez-vous rejouer ? (o/n)"
 }
+
+Write-Host "`nMerci d'avoir joue ! A bientot." -ForegroundColor Cyan
