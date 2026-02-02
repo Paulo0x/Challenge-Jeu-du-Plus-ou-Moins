@@ -1,91 +1,119 @@
 <#
 .SYNOPSIS
-    Jeu du Plus ou Moins interactif.
+    Version Ultime du Jeu Plus ou Moins - TechSecure Edition.
 .DESCRIPTION
-    Un jeu console ou l'utilisateur doit deviner un nombre genere par l'ordinateur
-    ou un autre joueur, avec gestion des scores et niveaux de difficulte.
-.PARAMETER Nom
-    Nom du joueur pour l'enregistrement du score.
-.NOTES
-    Auteur: Ton Nom
-    Date: 02/02/2026
+    Inclut : Mode Solo/Duel, Niveaux, Sauvegarde CSV, Indices, Sons et Stats.
 #>
-
-# --- Fonctions de gestion des donnees ---
-# Sauvegarde les resultats dans un fichier CSV local
-function Sauvegarder-Score($nom, $niveau, $tentatives) { ... }
-
-# --- Menu Principal et Logique du Jeu ---
-# Boucle principale permettant de rejouer
-while ($rejouer -eq "o") { ... }
-
-
 
 $fichierScores = "scores.csv"
 
-# 8.1 - Fonction pour sauvegarder
-function Sauvegarder-Score($nom, $niveau, $tentatives) {
-    $date = Get-Date -Format "dd/MM/yyyy HH:mm"
-    $ligne = "$nom,$niveau,$tentatives,$date"
-    $ligne | Out-File -FilePath $fichierScores -Append -Encoding utf8
-}
-
-# 8.1 - Fonction pour afficher le tableau des scores
-function Afficher-Scores {
-    if (Test-Path $fichierScores) {
-        Write-Host "`n--- TABLEAU DES MEILLEURS SCORES ---" -ForegroundColor Magenta
-        $scores = Import-Csv -Path $fichierScores -Header "Nom","Niveau","Tentatives","Date"
-        $scores | Sort-Object {[int]$_.Tentatives} | Select-Object -First 10 | Format-Table
-    } else {
-        Write-Host "`nPas encore de scores enregistres." -ForegroundColor Yellow
+# --- SYSTEME SONORE & VISUEL ---
+function Jouer-Son($type) {
+    if ($type -eq "plus") { [console]::Beep(440, 200) }
+    elseif ($type -eq "moins") { [console]::Beep(330, 200) }
+    elseif ($type -eq "victoire") { 
+        foreach($f in @(523, 659, 783, 1046)) { [console]::Beep($f, 150) }
     }
-    Read-Host "`nAppuyez sur Entree pour revenir au menu"
 }
 
+function Afficher-Trophy {
+    Write-Host @"
+      ___________
+     '._==_==_=_.'
+     .-\:      /-.
+    | (|:.     |) |
+     '-|:.     |-'
+       \::.    /
+        '::. .'
+          ) (
+        _.' '._
+       `-------`
+"@ -ForegroundColor Yellow
+}
+
+# --- GESTION DES SCORES ---
+function Sauvegarder-Score($nom, $niveau, $tentatives, $succes) {
+    $date = Get-Date -Format "dd/MM/yyyy HH:mm"
+    $statut = if ($succes) { "Victoire" } else { "Defaite" }
+    "$nom,$niveau,$tentatives,$statut,$date" | Out-File $fichierScores -Append -Encoding utf8
+}
+
+function Afficher-Stats {
+    if (Test-Path $fichierScores) {
+        $data = Import-Csv $fichierScores -Header "Nom","Niveau","Tentatives","Resultat","Date"
+        $total = $data.Count
+        $victoires = ($data | Where-Object { $_.Resultat -eq "Victoire" }).Count
+        $taux = [Math]::Round(($victoires / $total) * 100, 1)
+        
+        Write-Host "`n=== STATISTIQUES GLOBALES ===" -ForegroundColor Magenta
+        Write-Host "Parties jouees : $total"
+        Write-Host "Taux de victoire : $taux %" -ForegroundColor Cyan
+        $data | Sort-Object {[int]$_.Tentatives} | Select-Object -First 5 | Format-Table
+    }
+    Read-Host "`nAppuyez sur Entree..."
+}
+
+# --- BOUCLE PRINCIPALE ---
 $rejouer = "o"
 while ($rejouer -eq "o") {
     Clear-Host
-    Write-Host "=== JEU DU PLUS OU MOINS v3.1 ===" -ForegroundColor Cyan
-    Write-Host "1. Jouer Solo"
-    Write-Host "2. Jouer Duel (2 joueurs)"
-    Write-Host "3. Voir les scores"
-    Write-Host "4. Quitter"
-    $menu = Read-Host "Votre choix"
+    Write-Host "   TECHSECURE - PLUS OU MOINS PRO v4.0" -ForegroundColor Cyan -BackgroundColor DarkBlue
+    Write-Host "1. Solo | 2. Duel | 3. Stats | 4. Quitter" -ForegroundColor Yellow
+    $choix = Read-Host "Action"
 
-    if ($menu -eq "3") { Afficher-Scores; continue }
-    if ($menu -eq "4") { break }
+    if ($choix -eq "3") { Afficher-Stats; continue }
+    if ($choix -eq "4") { break }
 
-    $nomJoueur = Read-Host "Entrez votre nom"
+    $nom = Read-Host "Nom du joueur"
     
-    if ($menu -eq "2") {
-        $nombreADevinerSaisie = Read-Host -AsSecureString "Joueur 1, entrez le nombre"
-        $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($nombreADevinerSaisie)
-        $nombreADeviner = [int][System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-        $limiteMax = 100; $niveau = "Duel"; Clear-Host
-    } else {
-        Write-Host "1.Facile 2.Moyen 3.Difficile"
+    # Configuration Niveau (Etape 6)
+    if ($choix -eq "1") {
+        Write-Host "1.Facile(50) 2.Moyen(100) 3.Difficile(200)"
         $nv = Read-Host "Niveau"
-        switch ($nv) {
-            "1" { $max=50; $limiteMax=15; $niveau="Facile" }
-            "3" { $max=200; $limiteMax=8; $niveau="Difficile" }
-            Default { $max=100; $limiteMax=10; $niveau="Moyen" }
+        switch($nv) {
+            "1" { $max=50; $limMax=15; $niv="Facile" }
+            "3" { $max=200; $limMax=8; $niv="Difficile" }
+            Default { $max=100; $limMax=10; $niv="Moyen" }
         }
-        $nombreADeviner = Get-Random -Minimum 1 -Maximum ($max + 1)
+        $target = Get-Random -Minimum 1 -Maximum ($max+1)
+    } else {
+        $target = [int](Read-Host -AsSecureString "Nombre a deviner (masque)")
+        $max=100; $limMax=10; $niv="Duel"
     }
 
     $tentatives = 0; $trouve = $false
-    while (-not $trouve -and $tentatives -lt $limiteMax) {
-        $saisie = Read-Host "Proposition"
-        if ($saisie -as [int] -eq $null) { continue }
+    while (-not $trouve -and $tentatives -lt $limMax) {
+        Write-Host "`nEssai $($tentatives+1)/$limMax" -ForegroundColor Gray
+        
+        # Indice Intelligent (Etape 10.1)
+        if ($tentatives -eq 5) {
+            $parite = if ($target % 2 -eq 0) { "Pair" } else { "Impair" }
+            Write-Host "[INDICE] Le nombre est $parite !" -ForegroundColor Cyan
+        }
+
+        $saisie = Read-Host "Votre choix"
+        if ($saisie -as [int] -eq $null) { Write-Host "Nombre valide svp" -ForegroundColor Red; continue }
         $essai = [int]$saisie
         $tentatives++
 
-        if ($essai -eq $nombreADeviner) {
-            Write-Host "Gagne en $tentatives essais !" -ForegroundColor Cyan
-            Sauvegarder-Score $nomJoueur $niveau $tentatives # Sauvegarde auto
+        if ($essai -eq $target) {
+            Afficher-Trophy
+            Write-Host "INCROYABLE ! Trouve en $tentatives essais." -ForegroundColor Cyan
+            Jouer-Son "victoire"
+            Sauvegarder-Score $nom $niv $tentatives $true
             $trouve = $true
-        } elseif ($essai -lt $nombreADeviner) { Write-Host "Plus grand" -ForegroundColor Blue }
-        else { Write-Host "Plus petit" -ForegroundColor Green }
+        } elseif ($essai -lt $target) {
+            Write-Host "C'est PLUS !" -ForegroundColor Blue
+            Jouer-Son "plus"
+        } else {
+            Write-Host "C'est MOINS !" -ForegroundColor Green
+            Jouer-Son "moins"
+        }
+    }
+
+    if (-not $trouve) {
+        Write-Host "GAME OVER. Le nombre etait $target." -ForegroundColor Red
+        Sauvegarder-Score $nom $niv $tentatives $false
     }
 
     $rejouer = Read-Host "Rejouer ? (o/n)"
