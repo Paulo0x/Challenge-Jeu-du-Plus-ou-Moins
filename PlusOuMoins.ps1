@@ -1,3 +1,26 @@
+<#
+.SYNOPSIS
+    Jeu du Plus ou Moins interactif.
+.DESCRIPTION
+    Un jeu console ou l'utilisateur doit deviner un nombre genere par l'ordinateur
+    ou un autre joueur, avec gestion des scores et niveaux de difficulte.
+.PARAMETER Nom
+    Nom du joueur pour l'enregistrement du score.
+.NOTES
+    Auteur: Ton Nom
+    Date: 02/02/2026
+#>
+
+# --- Fonctions de gestion des donnees ---
+# Sauvegarde les resultats dans un fichier CSV local
+function Sauvegarder-Score($nom, $niveau, $tentatives) { ... }
+
+# --- Menu Principal et Logique du Jeu ---
+# Boucle principale permettant de rejouer
+while ($rejouer -eq "o") { ... }
+
+
+
 $fichierScores = "scores.csv"
 
 # 8.1 - Fonction pour sauvegarder
