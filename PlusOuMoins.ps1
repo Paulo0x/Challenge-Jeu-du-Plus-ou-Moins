@@ -4,34 +4,41 @@ $rejouer = "o"
 while ($rejouer -eq "o") {
     Clear-Host
     Write-Host "================================" -ForegroundColor Cyan
-    Write-Host "   JEU DU PLUS OU MOINS v2.0" -ForegroundColor Cyan
+    Write-Host "   JEU DU PLUS OU MOINS v2.1" -ForegroundColor Cyan
     Write-Host "================================" -ForegroundColor Cyan
-    Write-Host "Regles : Devinez le nombre entre 1 et 100." -ForegroundColor Yellow
-    Write-Host "Attention : Vous avez 10 tentatives maximum !" -ForegroundColor Red
 
-    $nombreADeviner = Get-Random -Minimum 1 -Maximum 101
+    # 6.1 - Choix du niveau de difficulte
+    Write-Host "Choisissez votre niveau :" -ForegroundColor Yellow
+    Write-Host "1. Facile (1-50, 15 tentatives)"
+    Write-Host "2. Moyen (1-100, 10 tentatives)"
+    Write-Host "3. Difficile (1-200, 8 tentatives)"
+    
+    $choix = Read-Host "Votre choix (1, 2 ou 3)"
+    
+    switch ($choix) {
+        "1" { $maxNombre = 50; $limiteMax = 15; $niveau = "Facile" }
+        "3" { $maxNombre = 200; $limiteMax = 8; $niveau = "Difficile" }
+        Default { $maxNombre = 100; $limiteMax = 10; $niveau = "Moyen" }
+    }
+
+    $nombreADeviner = Get-Random -Minimum 1 -Maximum ($maxNombre + 1)
     $nombreTentatives = 0
-    $limiteMax = 10
     $trouve = $false
+
+    Write-Host "`nNiveau choisi : $niveau" -ForegroundColor Magenta
 
     while (-not $trouve -and $nombreTentatives -lt $limiteMax) {
         $tentativesRestantes = $limiteMax - $nombreTentatives
-        Write-Host "`nTentatives restantes : $tentativesRestantes" -ForegroundColor Yellow
+        Write-Host "`n[$niveau] Tentatives restantes : $tentativesRestantes" -ForegroundColor Yellow
         
-        $saisie = Read-Host "Votre proposition"
+        $saisie = Read-Host "Votre proposition (1-$maxNombre)"
         
-        # Validation des entrees (Etape 4)
         if ($saisie -as [int] -eq $null) {
             Write-Host "Erreur : Veuillez entrer un nombre valide." -ForegroundColor Red
             continue
         }
 
         $essai = [int]$saisie
-        if ($essai -lt 1 -or $essai -gt 100) {
-            Write-Host "Erreur : Entre 1 et 100 svp." -ForegroundColor Red
-            continue
-        }
-
         $nombreTentatives++
 
         if ($essai -eq $nombreADeviner) {
@@ -48,14 +55,12 @@ while ($rejouer -eq "o") {
     }
 
     if (-not $trouve) {
-        Write-Host "`nDommage ! Vous avez depasse les 10 essais." -ForegroundColor Red
-        Write-Host "Le nombre etait : $nombreADeviner" -ForegroundColor Yellow
+        Write-Host "`nDommage ! Le nombre etait : $nombreADeviner" -ForegroundColor Red
     }
 
-    # Affichage du meilleur score (Etape 5.1)
     if ($historiqueScores.Count -gt 0) {
         $meilleurScore = ($historiqueScores | Measure-Object -Minimum).Minimum
-        Write-Host "`nVotre meilleur score actuel : $meilleurScore" -ForegroundColor Magenta
+        Write-Host "`nMeilleur score de la session : $meilleurScore" -ForegroundColor Magenta
     }
 
     $rejouer = Read-Host "`nVoulez-vous rejouer ? (o/n)"
